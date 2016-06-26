@@ -1,5 +1,6 @@
 `include "utils.v" ;
 
+
 module algorithm ;
     function [2:0] find_next(
 	input [`router_address_size:0] src, dest, dim_x, dim_y);
