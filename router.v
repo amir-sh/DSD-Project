@@ -28,9 +28,11 @@ module router(
   wire [4:0][31:0] buffer_data_out;
   integer iter;
   
-  wire [31:0]din;
+  wire [31:0]demux_din; // dataE ke gharaar ast rooye bus rikhte shavad
   
-  reg [1:0] state; // 0 : ready for next package , 1 : writing , 2 : wait for ack/nack
+  reg [1:0] state; 	// 0 : ready for next package
+					// 1 : writing on bus
+					// 2 : wait for ack
 
   genvar i;
   generate 
@@ -40,68 +42,72 @@ module router(
     end
   endgenerate
   
-  demux dmx(din ,next_port , data_out);
+  demux dmx(demux_din ,next_port , data_out);
   
   always @(ack_in)
 	begin
-		if(state = 1 && !ack_in[next_port])
+		if(state == 2 && !ack_in[next_port])
+		begin
 		 current_flit = 0;
+		 state = 0;
 	end
 
   // for sending packet
   always @(posedge clock)
   begin
     write_signal = 0;
+	//////////////////////////////////////////////////////////// STATE 0
     if(state == 0)
     begin
-      for(iter = 0 ; iter < 5 ; iter = iter+1): finding
+      for(iter = 0 ; iter < 5 ; iter = iter+1): finding // peydaa kardane bufferi ke data daarad va maghsade aan jaa baraaye aan darad
       begin
         if(buffer_ready[iter])
         begin
-          current_package[0] = buffer_data_out[i];
-          dest = currentpackage[0][29-:router_address_size];
-	        package_size = currentpackage[0][24:22];
+          current_package[0] = buffer_data_out[iter];
+          dest = currentpackage[0][dest_address_beg_index:dest_address_end_index];
+	      current_package_size = currentpackage[0][package_size_beg_index:package_size_end_index];
           next_port = algorithm.find_next(my_id, dest, dim_x, dim_y);
-	        if(package_size <= capacity_in[next_port])
+	      if(current_package_size <= capacity_in[next_port])
           begin
-        		  last_port = iter;
-        		  disable finding;
-      		  end
+        	last_port = iter;
+			state = 1;
+			current_flit = 0;
+        	disable finding;
+		  end
         end
       end
 	// now we get this packet from buffer
-      for(current_flit = 0; current_flit < package_size; current_flit = current_flit +1)
+      for(iter = 0; iter < current_package_size; iter = iter + 1)
       begin
         next_signal[last_port] = 0;
-    		  current_package[current_flit] = buffer_data_out[last_port];
-		    next_signal[last_port] = 1;		
+    	current_package[iter] = buffer_data_out[last_port];
+		next_signal[last_port] = 1;		
       end 
-	    current_flit = 0;
     end
-	  else if(state == 1)
-		begin
-		  write_out_signal[next_port] = 0;
-			din = current_package[current_flit];
-			write_out_signal[next_port] = 1;
-			current_flit = current_flit +1;
-			if(current_flit == package_size)
-			  state = 2;
-		end
-	  else if(state == 2)
+	////////////////////////////////////////////////////////// STATE 1
+	else if(state == 1)
 	  begin
-	    if(!ack_in[next_port])
-		  begin
-		    state = 1;
-        current_flit = 0;
-      end
-      else 
-      begin
-        state = 0;
-      end
-	  end 
-  end
-  begin
-    
+		write_out_signal[next_port] = 0;
+		demux_din = current_package[current_flit];
+		write_out_signal[next_port] = 1;
+		current_flit = current_flit + 1;
+		if(current_flit == current_package_size)
+			state = 2;
+	  end
+	////////////////////////////////////////////////////////// STATE 2
+	else if(state == 2) 
+	begin
+	  if(!ack_in[next_port])// haalati ke baste dorost ferestadeh nashode bashad
+	    begin
+	      state = 1;
+		  current_flit = 0;
+		end
+	  else // haalati ke baste dorost ferestadeh shode bashad
+		begin
+		  state = 0;
+		end
+	end 
+	////////////////////////////////////////////////////////////
   end
 endmodule
   
