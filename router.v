@@ -1,27 +1,28 @@
 `include algorithm.v
 
 module router(
-  output [4:0][2:0] capacity_out,
-  output [4:0][31:0] data_out,
-  output [4:0] write_out_signal,
-  output reg [4:0] ack_out,
-
-  input [4:0][2:0] capacity_in,
-  input [4:0][31:0] data_in,
-  input [4:0] write_in_signal,
-  input [4:0] ack_in,
+	// outputs
+  output reg [4:0][2:0] capacity_out,	// mige ke buffer haye man cheghad zarfiat daran
+  output reg [4:0][31:0] data_out,		// bus haye khorooji!
+  output reg [4:0] write_out_signal,	// signal write ke be routere badi mige ke "mikham be to data bedam"
+  output reg [4:0] ack_out,				// signal ack
+	//inputs
+  input [4:0][2:0] capacity_in,		// hamin balaye ha, faghat barAx :)
+  input [4:0][31:0] data_in,		// hamin balaye ha, faghat barAx :)
+  input [4:0] write_in_signal,		// hamin balaye ha, faghat barAx :)
+  input [4:0] ack_in,				// hamin balaye ha, faghat barAx :)
   
   input clock
 )
 
-  parameter my_id, dim_x,dim_y;
+  parameter my_id, dim_x,dim_y; // confige router ,ke bo'd haye shabake va IDe router ro az biroon set mishan
 
-  reg [4:0][31:0] current_package;
-  reg [2:0] current_package_size;
-  reg [2:0] current_flit;
-  reg [2:0] src, dest;
-  reg [2:0] last_port, next_port;
-  
+  reg [4:0][31:0] current_package; // packageE ke gharaar hast ersal beshe
+  reg [2:0] current_package_size; // size packageE ke gharaar hast ersal beshe
+  reg [2:0] current_flit; // shomare flitE ke gharaar hast ersal beshe
+  reg [2:0] last_port, next_port; 	// "last_port" shomareye bufferE ast ke package raa az oon khoondim
+									// "next_port" shomareye routere badi hast ke in adad baa estefade as module "algorithm" be dast miad
+	// voroodi va khorooji haye buffer ha
   wire [4:0] buffer_ready;
   reg [4:0] next_signal;
   wire [4:0][31:0] buffer_data_out;
