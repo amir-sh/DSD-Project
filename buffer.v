@@ -12,7 +12,7 @@ module buffer(
   output [2:0] capacity,
   
   //for reader
-  output [31:0] out,D:/ce/term6/DSD/project/proj/buffer.v
+  output [31:0] out,
   output ready_for_reader
   );
   
